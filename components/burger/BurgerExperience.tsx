@@ -6,6 +6,7 @@ import { IngredientDetails } from "./IngredientDetails";
 import { gsap } from "@/lib/animations/gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -14,6 +15,7 @@ if (typeof window !== "undefined") {
 export function BurgerExperience() {
   const containerRef = useRef<HTMLDivElement>(null);
   const burgerRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useGSAP(() => {
     if (!containerRef.current || !burgerRef.current) return;
@@ -21,10 +23,27 @@ export function BurgerExperience() {
     const ingredients = burgerRef.current.querySelectorAll("[data-ingredient]");
     const texts = containerRef.current.querySelectorAll("[data-ingredient-text]");
 
-    // gsap.matchMedia() allows us to define different animations for different screen sizes
+    // Accessibility Fallback: If user prefers reduced motion, show a static exploded view
+    if (prefersReducedMotion) {
+      // Set heights to auto so there's no empty scroll space
+      containerRef.current.style.height = "auto";
+      
+      // Set a static, beautiful exploded state
+      gsap.set(ingredients, {
+        y: (index) => [-20, -80, -140, -200, -260, -380, 120][index],
+        x: "-50%",
+        top: "50%",
+        left: "50%",
+      });
+      
+      // Show all text statically
+      gsap.set(texts, { opacity: 1, y: 0 });
+      return;
+    }
+
+    // Standard GSAP MatchMedia for responsive animation
     const mm = gsap.matchMedia();
 
-    // Desktop Animation
     mm.add("(min-width: 768px)", () => {
       gsap.set(ingredients, { y: 0, x: "-50%", top: "50%", left: "50%" });
       
@@ -60,11 +79,9 @@ export function BurgerExperience() {
       .to(burgerRef.current, { scale: 0.9, duration: 1, ease: "power2.inOut" }, "reassemble+=1");
     });
 
-    // Mobile Animation (Simpler, shorter distances)
     mm.add("(max-width: 767px)", () => {
       gsap.set(ingredients, { y: 0, x: "-50%", top: "50%", left: "50%" });
       
-      // Tighter explosion distances for mobile
       const explodePositionsMobile = [-10, -40, -70, -100, -130, -190, 60];
       
       const tl = gsap.timeline({
@@ -97,22 +114,18 @@ export function BurgerExperience() {
       .to(burgerRef.current, { scale: 0.85, duration: 1, ease: "power2.inOut" }, "reassemble+=1");
     });
 
-    return () => mm.revert(); // Cleanup
-  }, { scope: containerRef });
+    return () => mm.revert();
+  }, { scope: containerRef, dependencies: [prefersReducedMotion] });
 
   return (
-    // Reduced height on mobile to 300vh
     <div ref={containerRef} className="relative h-[300vh] md:h-[400vh] w-full">
       <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden bg-brand-bg">
-        
         <div className="relative z-10 w-full flex justify-center">
           <ExplodedBurger ref={burgerRef} />
         </div>
-
         <div className="absolute inset-0 z-20 pointer-events-none px-6 md:px-24 max-w-7xl mx-auto w-full flex">
            <IngredientDetails />
         </div>
-
       </div>
     </div>
   );
