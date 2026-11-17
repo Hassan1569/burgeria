@@ -21,75 +21,88 @@ export function BurgerExperience() {
     const ingredients = burgerRef.current.querySelectorAll("[data-ingredient]");
     const texts = containerRef.current.querySelectorAll("[data-ingredient-text]");
 
-    // Initial state: Burger is fully assembled
-    gsap.set(ingredients, { y: 0, x: "-50%", top: "50%", left: "50%" });
+    // gsap.matchMedia() allows us to define different animations for different screen sizes
+    const mm = gsap.matchMedia();
 
-    // Define the vertical spacing for the exploded view
-    // Order: Patty, Cheese, Sauce, Tomato, Lettuce, Top Bun, Bottom Bun
-    const explodePositions = [
-      -20, // Patty
-      -80, // Cheese
-      -140, // Sauce
-      -200, // Tomato
-      -260, // Lettuce
-      -380, // Top Bun
-      120,  // Bottom Bun
-    ];
-
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 1.5, // Smoother scrubbing
-      },
-    });
-
-    // 1. Explode the burger
-    tl.to(ingredients, {
-      y: (index) => explodePositions[index],
-      duration: 2,
-      ease: "power2.inOut",
-      stagger: 0.1,
-    }, "explode");
-
-    // 2. Reveal Texts
-    texts.forEach((text, index) => {
-      // Fade in
-      tl.to(text, {
-        opacity: 1,
-        y: -20,
-        duration: 0.4,
-        ease: "power1.out",
-      }, `explode+=${index * 0.3}`);
+    // Desktop Animation
+    mm.add("(min-width: 768px)", () => {
+      gsap.set(ingredients, { y: 0, x: "-50%", top: "50%", left: "50%" });
       
-      // Fade out
-      tl.to(text, {
-        opacity: 0,
-        y: -40,
-        duration: 0.4,
-        ease: "power1.in",
-      }, `explode+=${index * 0.3 + 0.4}`);
+      const explodePositions = [-20, -80, -140, -200, -260, -380, 120];
+      
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 1.5,
+        },
+      });
+
+      tl.to(ingredients, {
+        y: (index) => explodePositions[index],
+        duration: 2,
+        ease: "power2.inOut",
+        stagger: 0.1,
+      }, "explode");
+
+      texts.forEach((text, index) => {
+        tl.to(text, { opacity: 1, y: -20, duration: 0.4, ease: "power1.out" }, `explode+=${index * 0.3}`);
+        tl.to(text, { opacity: 0, y: -40, duration: 0.4, ease: "power1.in" }, `explode+=${index * 0.3 + 0.4}`);
+      });
+
+      tl.to(ingredients, {
+        y: 0,
+        duration: 2,
+        ease: "power3.inOut",
+        stagger: 0.05,
+      }, "reassemble")
+      .to(burgerRef.current, { scale: 0.9, duration: 1, ease: "power2.inOut" }, "reassemble+=1");
     });
 
-    // 3. Reassemble the burger
-    tl.to(ingredients, {
-      y: 0,
-      duration: 2,
-      ease: "power3.inOut",
-      stagger: 0.05,
-    }, "reassemble")
-    // 4. Subtle scale down as we prepare to exit
-    .to(burgerRef.current, {
-      scale: 0.9,
-      duration: 1,
-      ease: "power2.inOut",
-    }, "reassemble+=1");
+    // Mobile Animation (Simpler, shorter distances)
+    mm.add("(max-width: 767px)", () => {
+      gsap.set(ingredients, { y: 0, x: "-50%", top: "50%", left: "50%" });
+      
+      // Tighter explosion distances for mobile
+      const explodePositionsMobile = [-10, -40, -70, -100, -130, -190, 60];
+      
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 1,
+        },
+      });
 
+      tl.to(ingredients, {
+        y: (index) => explodePositionsMobile[index],
+        duration: 2,
+        ease: "power2.inOut",
+        stagger: 0.05,
+      }, "explode");
+
+      texts.forEach((text, index) => {
+        tl.to(text, { opacity: 1, y: -10, duration: 0.3, ease: "power1.out" }, `explode+=${index * 0.25}`);
+        tl.to(text, { opacity: 0, y: -20, duration: 0.3, ease: "power1.in" }, `explode+=${index * 0.25 + 0.3}`);
+      });
+
+      tl.to(ingredients, {
+        y: 0,
+        duration: 2,
+        ease: "power3.inOut",
+        stagger: 0.05,
+      }, "reassemble")
+      .to(burgerRef.current, { scale: 0.85, duration: 1, ease: "power2.inOut" }, "reassemble+=1");
+    });
+
+    return () => mm.revert(); // Cleanup
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef} className="relative h-[400vh] w-full">
+    // Reduced height on mobile to 300vh
+    <div ref={containerRef} className="relative h-[300vh] md:h-[400vh] w-full">
       <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden bg-brand-bg">
         
         <div className="relative z-10 w-full flex justify-center">
