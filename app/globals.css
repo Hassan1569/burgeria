@@ -6,7 +6,7 @@
   --color-brand-red: #D32F2F; /* Rich burger-inspired red */
   --color-brand-muted: #888888;
   
-  --font-display: var(--font-oswald), sans-serif;
+  --font-display: var(--font-anton), sans-serif;
   --font-sans: var(--font-inter), sans-serif;
 }
 
@@ -36,8 +36,8 @@ body {
 .text-display {
   font-family: var(--font-display);
   text-transform: uppercase;
-  line-height: 0.9;
-  letter-spacing: -0.02em;
+  line-height: 0.85; /* Tighter line height for Anton */
+  letter-spacing: 0.01em;
 }
 
 .text-body {
